@@ -1,0 +1,36 @@
+# Environment
+.env
+.env.*
+/etc/fiscaltrace.env
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+# Data files — never commit PDFs or model artifacts
+*.pdf
+*.pkl
+*.joblib
+
+# Logs
+*.log
+logs/
+
+# Database
+*.dump
+*.backup
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
