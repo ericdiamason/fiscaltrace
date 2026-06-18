@@ -1,0 +1,16 @@
+[Unit]
+Description=FiscalTrace FastAPI Service
+After=network.target
+
+[Service]
+User=opc
+Group=opc
+Type=simple
+EnvironmentFile=/etc/fiscaltrace.env
+WorkingDirectory=/home/opc/fiscaltrace
+ExecStart=/home/fiscaltrace/venv/bin/uvicorn api.main_api:app --host 127.0.0.1 --port 8002
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
