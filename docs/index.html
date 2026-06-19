@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>FiscalTrace — Public Expenditure Intelligence</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="FiscalTrace extracts structured intelligence from Liberia's public financial documents — automated anomaly detection across $818M in government spending." />
+  <style>
+    :root{
+      --bg:#050b0a;
+      --muted:#8a9a96;
+      --text:#e7f0ee;
+      --accent:#2dd4bf;
+      --accent-2:#38bdf8;
+      --accent-3:#a78bfa;
+      --danger:#fb7185;
+      --warn:#fbbf24;
+      --glass:rgba(255,255,255,0.025);
+      --radius-lg:16px;
+      --radius-md:10px;
+      --shadow:0 18px 45px rgba(2,10,8,0.7);
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,"Roboto Mono","Courier New",monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:radial-gradient(1400px 700px at 50% -10%,rgba(45,212,191,0.05),transparent 50%),linear-gradient(180deg,#020807 0%,#050b0a 100%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      line-height:1.5;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1180px;margin:0 auto;padding:1.25rem}
+    header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,rgba(2,10,8,0.7),rgba(2,10,8,0.4));backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.03)}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0}
+    .brand{display:flex;align-items:center;gap:0.65rem}
+    .brand-mark{width:34px;height:34px}
+    .brand-name{font-weight:700;font-size:0.95rem}
+    .brand-sub{font-size:0.72rem;color:var(--muted)}
+    .nav-links{display:flex;gap:0.4rem;align-items:center}
+    .nav-link{padding:0.4rem 0.65rem;border-radius:999px;color:var(--muted);font-size:0.85rem;cursor:pointer}
+    .nav-link:hover{background:var(--glass);color:var(--text)}
+    .hub-link{display:flex;align-items:center;gap:6px;padding:0.4rem 0.7rem;border-radius:999px;border:1px solid rgba(255,255,255,0.06);font-size:0.8rem;color:var(--muted)}
+    .hub-link:hover{color:var(--text);border-color:rgba(255,255,255,0.12)}
+    @media(max-width:820px){.nav-links .nav-link{display:none}}
+
+    main{padding:0 0 5rem}
+
+    .hero-wrap{padding:2.5rem 0 1rem;text-align:center}
+    .hero-kicker{display:inline-flex;align-items:center;gap:0.55rem;padding:0.3rem 0.8rem;border-radius:999px;background:rgba(45,212,191,0.06);border:1px solid rgba(45,212,191,0.16);font-size:0.78rem;color:var(--accent);margin-bottom:1.2rem;font-family:var(--mono)}
+    .live-dot{width:6px;height:6px;border-radius:999px;background:var(--accent);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(45,212,191,0.5)}50%{box-shadow:0 0 0 5px rgba(45,212,191,0)}}
+    .hero-title{font-size:clamp(1.9rem,4.2vw,3.1rem);line-height:1.08;margin:0 0 1rem;font-weight:700;letter-spacing:-0.01em}
+    .hero-title .accent{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;color:transparent}
+    .hero-lead{color:var(--muted);font-size:1.05rem;max-width:56ch;margin:0 auto 1.6rem;line-height:1.65}
+    .hero-actions{display:flex;gap:0.7rem;justify-content:center;flex-wrap:wrap}
+    .btn{padding:0.6rem 1.05rem;border-radius:999px;border:1px solid rgba(255,255,255,0.04);cursor:pointer;font-weight:600;font-size:0.88rem}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021410;border:none}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.1)}
+
+    .terminal{margin-top:2.2rem;background:linear-gradient(180deg,rgba(255,255,255,0.016),rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.06);border-radius:20px;box-shadow:0 30px 80px rgba(2,10,8,0.85);overflow:hidden}
+    .terminal-bar{display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;background:rgba(255,255,255,0.015);border-bottom:1px solid rgba(255,255,255,0.04)}
+    .terminal-dots{display:flex;gap:6px}
+    .tdot{width:9px;height:9px;border-radius:999px;background:rgba(255,255,255,0.12)}
+    .terminal-title{font-family:var(--mono);font-size:0.74rem;color:var(--muted)}
+    .terminal-status{display:flex;align-items:center;gap:6px;font-size:0.76rem;color:var(--accent);font-family:var(--mono)}
+
+    .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,0.04)}
+    .kpi{background:#061310;padding:1.1rem 1.2rem}
+    .kpi-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:0.4rem}
+    .kpi-val{font-family:var(--mono);font-size:1.45rem;font-weight:600;color:var(--text)}
+    .kpi-sub{font-size:0.72rem;color:var(--muted);margin-top:0.25rem}
+    @media(max-width:760px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
+
+    .feed-wrap{padding:0}
+    .feed-head{display:flex;justify-content:space-between;align-items:center;padding:0.9rem 1.2rem 0.5rem}
+    .feed-title{font-size:0.85rem;font-weight:600;color:var(--text)}
+    .feed-meta{font-size:0.74rem;color:var(--muted);font-family:var(--mono)}
+    .anomaly-list{padding:0.3rem 1.2rem 1.1rem}
+    .anomaly-row{display:flex;align-items:center;gap:0.8rem;padding:0.65rem 0;border-bottom:1px solid rgba(255,255,255,0.035)}
+    .anomaly-row:last-child{border-bottom:none}
+    .anomaly-badge{font-family:var(--mono);font-size:0.7rem;font-weight:700;padding:0.18rem 0.5rem;border-radius:6px;flex-shrink:0;min-width:48px;text-align:center}
+    .anomaly-badge.up{background:rgba(45,212,191,0.1);color:var(--accent)}
+    .anomaly-badge.down{background:rgba(251,113,133,0.1);color:var(--danger)}
+    .anomaly-name{flex:1;min-width:0;font-size:0.86rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .anomaly-sector{font-size:0.74rem;color:var(--muted);flex-shrink:0;display:none}
+    @media(min-width:640px){.anomaly-sector{display:block}}
+    .anomaly-amounts{font-family:var(--mono);font-size:0.78rem;color:var(--muted);flex-shrink:0;text-align:right}
+
+    section.block{margin-top:4rem}
+    .section-label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.13em;margin-bottom:0.5rem;font-family:var(--mono)}
+    .section-title{font-size:1.6rem;margin:0 0 0.6rem;font-weight:700}
+    .section-sub{color:var(--muted);max-width:60ch;margin-bottom:1.75rem;line-height:1.6}
+
+    .audience-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.9rem}
+    @media(max-width:820px){.audience-grid{grid-template-columns:1fr}}
+    .audience-card{background:linear-gradient(180deg,rgba(255,255,255,0.012),rgba(255,255,255,0.004));border:1px solid rgba(255,255,255,0.05);border-radius:var(--radius-lg);padding:1.3rem}
+    .audience-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:0.8rem;background:rgba(45,212,191,0.08);color:var(--accent);font-weight:700;font-size:0.95rem}
+    .audience-title{font-weight:700;font-size:1rem;margin-bottom:0.4rem}
+    .audience-desc{color:var(--muted);font-size:0.86rem;line-height:1.55}
+
+    .sector-bars{display:flex;flex-direction:column;gap:0.55rem}
+    .sector-row{display:flex;align-items:center;gap:0.8rem}
+    .sector-label{font-size:0.82rem;color:var(--text);width:180px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sector-track{flex:1;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+    .sector-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+    .sector-val{font-family:var(--mono);font-size:0.78rem;color:var(--muted);width:70px;text-align:right;flex-shrink:0}
+
+    .pipeline{display:flex;flex-direction:column;gap:0}
+    .pipe-row{display:flex;align-items:center;gap:1rem;padding:1rem 0;border-bottom:1px dashed rgba(255,255,255,0.05)}
+    .pipe-row:last-child{border-bottom:none}
+    .pipe-num{width:28px;height:28px;border-radius:8px;background:rgba(45,212,191,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.78rem;font-weight:700;flex-shrink:0}
+    .pipe-body{flex:1}
+    .pipe-title{font-weight:600;font-size:0.95rem;margin-bottom:0.2rem}
+    .pipe-desc{color:var(--muted);font-size:0.85rem;line-height:1.55}
+    .pipe-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent-3);background:rgba(167,139,250,0.07);padding:0.2rem 0.55rem;border-radius:6px;flex-shrink:0}
+
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+    @media(max-width:820px){.two-col{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.012),rgba(255,255,255,0.004));padding:1.4rem;border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,0.04)}
+    .card h3{margin:0 0 0.7rem;font-size:1rem;font-weight:600}
+    .list{margin:0;padding-left:1.1rem;color:var(--muted);font-size:0.88rem}
+    .list li{margin-bottom:0.55rem;line-height:1.55}
+
+    .api-block{background:#061310;border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius-md);padding:0.9rem 1.1rem;font-family:var(--mono);font-size:0.82rem;margin-bottom:0.6rem;overflow-x:auto}
+    .api-method{color:var(--accent);font-weight:700;margin-right:0.5rem}
+    .api-path{color:var(--text)}
+
+    .explorer{background:linear-gradient(180deg,rgba(255,255,255,0.012),rgba(255,255,255,0.004));border:1px solid rgba(255,255,255,0.04);border-radius:var(--radius-lg);padding:1.5rem}
+    input[type="text"]{width:100%;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);padding:0.65rem 0.85rem;border-radius:8px;color:var(--text);outline:none;font-family:var(--mono);font-size:0.85rem}
+    .search-result{background:#061310;border-radius:10px;padding:0.9rem 1rem;margin-top:0.9rem;border:1px solid rgba(255,255,255,0.04);font-size:0.86rem}
+    .search-row{display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px dashed rgba(255,255,255,0.04)}
+    .search-row:last-child{border-bottom:none}
+    .search-key{color:var(--muted);font-size:0.82rem}
+    .search-val{font-family:var(--mono);color:var(--text);font-size:0.85rem}
+
+    footer{padding:2rem 0;border-top:1px solid rgba(255,255,255,0.03);color:var(--muted);font-size:0.85rem;margin-top:3rem}
+    .footer-inner{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav class="nav">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <rect width="80" height="80" rx="16" fill="#0B1F1B"/>
+            <rect x="8" y="8" width="64" height="64" rx="12" fill="#10302A"/>
+            <text x="40" y="50" font-family="ui-monospace,monospace" font-size="26" font-weight="700" fill="#2DD4BF" text-anchor="middle" letter-spacing="-2">F</text>
+            <circle cx="40" cy="41" r="3" fill="#38BDF8"/>
+            <text x="40" y="65" font-family="ui-monospace,monospace" font-size="8" font-weight="400" fill="#38BDF8" text-anchor="middle" letter-spacing="2">TRACE</text>
+          </svg>
+          <div>
+            <div class="brand-name">FiscalTrace</div>
+            <div class="brand-sub">Public Expenditure Intelligence</div>
+          </div>
+        </div>
+        <div class="nav-links">
+          <span class="nav-link" onclick="scrollToSection('architecture')">Architecture</span>
+          <span class="nav-link" onclick="scrollToSection('api')">API</span>
+          <span class="nav-link" onclick="scrollToSection('explorer')">Search</span>
+          <a class="hub-link" href="https://ericdiamason.tech">&larr; ericdiamason.tech</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="hero-wrap">
+      <div class="hero-kicker"><span class="live-dot"></span> liberia &middot; fy2025 &middot; government of liberia</div>
+      <h1 class="hero-title">Government budgets are public.<br><span class="accent">Almost nobody can read them at scale.</span></h1>
+      <p class="hero-lead">FiscalTrace extracts structured intelligence from public financial PDFs &mdash; automatically surfacing budget anomalies that would take a journalist weeks to find by hand.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="scrollToSection('explorer')">Search a ministry &#8627;</button>
+        <a class="btn btn-ghost" href="https://fiscaltrace.ericdiamason.tech/docs" target="_blank" rel="noreferrer">API docs</a>
+        <a class="btn btn-ghost" href="https://github.com/ericdiamason/fiscaltrace" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>
+        <div class="terminal-title">fiscaltrace &mdash; anomaly-feed.live</div>
+        <div class="terminal-status"><span class="live-dot"></span><span id="conn-status">connecting</span></div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi"><div class="kpi-label">Total budget tracked</div><div class="kpi-val" id="kpi-budget">&mdash;</div><div class="kpi-sub">FY2025 &middot; USD</div></div>
+        <div class="kpi"><div class="kpi-label">Spending entities</div><div class="kpi-val" id="kpi-entities">&mdash;</div><div class="kpi-sub">ministries &amp; agencies</div></div>
+        <div class="kpi"><div class="kpi-label">Anomalies flagged</div><div class="kpi-val" id="kpi-anomalies">&mdash;</div><div class="kpi-sub">large increases + cuts</div></div>
+        <div class="kpi"><div class="kpi-label">Largest budget</div><div class="kpi-val" id="kpi-largest">&mdash;</div><div class="kpi-sub" id="kpi-largest-name">&mdash;</div></div>
+      </div>
+
+      <div class="feed-wrap">
+        <div class="feed-head">
+          <div class="feed-title">Automated anomaly detection</div>
+          <div class="feed-meta" id="feed-updated">&mdash;</div>
+        </div>
+        <div class="anomaly-list" id="anomaly-body">
+          <div style="color:var(--muted);padding:1rem 0">Loading anomalies&hellip;</div>
+        </div>
+      </div>
+    </div>
+
+    <section class="block" id="audience">
+      <div class="section-label">// who this is for</div>
+      <h2 class="section-title">Three readers, one dataset</h2>
+      <p class="section-sub">The same structured data serves very different needs &mdash; without anyone touching a spreadsheet.</p>
+
+      <div class="audience-grid">
+        <div class="audience-card">
+          <div class="audience-icon">A</div>
+          <div class="audience-title">Analysts</div>
+          <div class="audience-desc">Full API access, cross-year variance, sector-level aggregation &mdash; built for World Bank and donor-side budget review.</div>
+        </div>
+        <div class="audience-card">
+          <div class="audience-icon">J</div>
+          <div class="audience-title">Journalists</div>
+          <div class="audience-desc">Anomalies pre-flagged with the source page cited. No 600-page PDF to read before the story starts.</div>
+        </div>
+        <div class="audience-card">
+          <div class="audience-icon">G</div>
+          <div class="audience-title">Government &amp; donors</div>
+          <div class="audience-desc">Execution rates and ministry scorecards &mdash; the same numbers a Minister of Finance briefing would need.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="section-label">// fy2025 budget</div>
+      <h2 class="section-title">$818M, eleven sectors</h2>
+      <p class="section-sub">Live breakdown, pulled directly from the structured database &mdash; not a static chart.</p>
+      <div class="sector-bars" id="sector-bars">
+        <div style="color:var(--muted);font-size:0.85rem">Loading sector data&hellip;</div>
+      </div>
+    </section>
+
+    <section class="block" id="architecture">
+      <div class="section-label">// architecture</div>
+      <h2 class="section-title">Five stages, PDF to API</h2>
+      <p class="section-sub">The same engineering discipline as <a href="https://omnisight.ericdiamason.tech" style="color:var(--accent)">OmniSight</a>, applied to a completely different data source.</p>
+
+      <div class="pipeline">
+        <div class="pipe-row"><div class="pipe-num">01</div><div class="pipe-body"><div class="pipe-title">Source documents</div><div class="pipe-desc">MFDP budget PDFs, GAC audit reports, PPCC procurement records &mdash; all public, all unstructured.</div></div><div class="pipe-tag">mfdp.gov.lr</div></div>
+        <div class="pipe-row"><div class="pipe-num">02</div><div class="pipe-body"><div class="pipe-title">PDF extraction engine</div><div class="pipe-desc">Pattern-matched extraction against a 625-page national budget document &mdash; sub-4-second runtime.</div></div><div class="pipe-tag">pdfplumber</div></div>
+        <div class="pipe-row"><div class="pipe-num">03</div><div class="pipe-body"><div class="pipe-title">Structured PostgreSQL</div><div class="pipe-desc">Spending entities, fiscal years, sectors &mdash; normalised, indexed, queryable in milliseconds.</div></div><div class="pipe-tag">Postgres 15</div></div>
+        <div class="pipe-row"><div class="pipe-num">04</div><div class="pipe-body"><div class="pipe-title">Variance computation</div><div class="pipe-desc">Budget growth, execution rate, and anomaly thresholds computed on ingest &mdash; not on request.</div></div><div class="pipe-tag">SQL views</div></div>
+        <div class="pipe-row"><div class="pipe-num">05</div><div class="pipe-body"><div class="pipe-title">FastAPI gateway</div><div class="pipe-desc">Eight endpoints &mdash; overview, sectors, search, anomalies, full variance export.</div></div><div class="pipe-tag">FastAPI</div></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="two-col">
+        <div class="card">
+          <h3>Why this matters</h3>
+          <p style="color:var(--muted);font-size:0.9rem;margin-bottom:0.8rem">Transparency laws require governments to publish. They don't require the data to be usable. A 625-page PDF technically satisfies disclosure rules while remaining functionally invisible to everyone except someone with weeks to spare.</p>
+          <p style="color:var(--muted);font-size:0.9rem;margin:0">FiscalTrace closes that gap &mdash; not by demanding new disclosure, but by making the disclosure that already exists actually work.</p>
+        </div>
+        <div class="card">
+          <h3>Operational facts</h3>
+          <ul class="list">
+            <li id="fact-entities">117 spending entities tracked across 11 government sectors</li>
+            <li id="fact-budget">$818M in FY2025 allocations structured and queryable</li>
+            <li id="fact-anomalies">49 entities flagged for budget changes over 20%</li>
+            <li>Every figure traceable to its source document and page</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="api">
+      <div class="section-label">// api</div>
+      <h2 class="section-title">Eight endpoints, fully documented</h2>
+      <p class="section-sub">Full interactive Swagger UI at <a href="https://fiscaltrace.ericdiamason.tech/docs" style="color:var(--accent)">fiscaltrace.ericdiamason.tech/docs</a></p>
+
+      <div class="api-block"><span class="api-method">GET</span><span class="api-path">/api/v1/overview</span></div>
+      <div class="api-block"><span class="api-method">GET</span><span class="api-path">/api/v1/sectors</span></div>
+      <div class="api-block"><span class="api-method">GET</span><span class="api-path">/api/v1/anomalies?threshold_pct=20</span></div>
+      <div class="api-block"><span class="api-method">GET</span><span class="api-path">/api/v1/search?q=health</span></div>
+      <div class="api-block"><span class="api-method">GET</span><span class="api-path">/api/v1/entities/{entity_code}</span></div>
+    </section>
+
+    <section class="block" id="explorer">
+      <div class="section-label">// try it</div>
+      <h2 class="section-title">Search any ministry</h2>
+      <p class="section-sub">Full-text search across all spending entities. No authentication required.</p>
+
+      <div class="explorer">
+        <input id="searchInput" type="text" placeholder="health, education, justice, agriculture..." />
+        <div style="display:flex;gap:0.6rem;margin-top:0.7rem">
+          <button class="btn btn-primary" onclick="searchEntity()" style="flex:1">Search &#8627;</button>
+          <button class="btn btn-ghost" onclick="useExample()">Try example</button>
+        </div>
+        <div id="searchOutput" style="margin-top:0.8rem;color:var(--muted);font-size:0.85rem">Enter a search term above, or try the example.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div>&copy; <span id="year"></span> FiscalTrace &mdash; built by <a href="https://ericdiamason.tech" style="color:var(--accent)">Eric Dia Mason</a></div>
+      <div style="display:flex;gap:1rem">
+        <a href="https://fiscaltrace.ericdiamason.tech/docs" style="color:var(--accent)">API Docs</a>
+        <a href="https://github.com/ericdiamason/fiscaltrace" style="color:var(--accent)">GitHub</a>
+        <a href="https://ericdiamason.tech" style="color:var(--accent)">Hub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const API = "https://fiscaltrace.ericdiamason.tech";
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    function scrollToSection(id){
+      document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function fmtCompact(n){
+      if(n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+      if(n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+      if(n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+      return '$' + Math.round(n);
+    }
+    function fmtUSD(n){ return '$' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+
+    async function refreshOverview(){
+      try{
+        const res = await fetch(API + '/api/v1/overview');
+        const d = await res.json();
+
+        document.getElementById('conn-status').textContent = 'live';
+        document.getElementById('kpi-budget').textContent = fmtCompact(d.total_fy2025_budget);
+        document.getElementById('kpi-entities').textContent = d.total_entities;
+        document.getElementById('kpi-anomalies').textContent = d.entities_with_large_increases + d.entities_with_large_cuts;
+        document.getElementById('kpi-largest').textContent = fmtCompact(d.largest_ministry_budget);
+        document.getElementById('kpi-largest-name').textContent = d.largest_ministry.slice(0,28);
+        document.getElementById('feed-updated').textContent = 'fy' + d.fiscal_year + ' · updated ' + new Date().toLocaleTimeString();
+
+        document.getElementById('fact-entities').textContent = d.total_entities + ' spending entities tracked across ' + d.total_sectors + ' government sectors';
+        document.getElementById('fact-budget').textContent = fmtCompact(d.total_fy2025_budget) + ' in FY' + d.fiscal_year + ' allocations structured and queryable';
+        document.getElementById('fact-anomalies').textContent = (d.entities_with_large_increases + d.entities_with_large_cuts) + ' entities flagged for budget changes over 20%';
+      }catch(e){
+        document.getElementById('conn-status').textContent = 'reconnecting';
+      }
+    }
+
+    async function refreshAnomalies(){
+      try{
+        const res = await fetch(API + '/api/v1/anomalies?threshold_pct=20&limit=8');
+        const data = await res.json();
+        const body = document.getElementById('anomaly-body');
+        body.innerHTML = '';
+        data.forEach(a => {
+          const isUp = a.alert_type === 'large_increase';
+          const row = document.createElement('div');
+          row.className = 'anomaly-row';
+          row.innerHTML = '<span class="anomaly-badge ' + (isUp?'up':'down') + '">' + (isUp?'+':'') + a.change_pct.toFixed(0) + '%</span>' +
+                            '<span class="anomaly-name">' + a.entity_name + '</span>' +
+                            '<span class="anomaly-sector">' + a.sector + '</span>' +
+                            '<span class="anomaly-amounts">' + fmtCompact(a.fy2023_actual) + ' &rarr; ' + fmtCompact(a.fy2025_budget) + '</span>';
+          body.appendChild(row);
+        });
+      }catch(e){
+        document.getElementById('anomaly-body').innerHTML = '<div style="color:var(--muted);padding:1rem 0">Reconnecting...</div>';
+      }
+    }
+
+    async function refreshSectors(){
+      try{
+        const res = await fetch(API + '/api/v1/sectors');
+        const data = await res.json();
+        const max = Math.max.apply(null, data.map(function(s){ return s.fy2025_budget || 0; }));
+        const wrap = document.getElementById('sector-bars');
+        wrap.innerHTML = '';
+        data.forEach(function(s){
+          const pct = max > 0 ? (s.fy2025_budget / max * 100) : 0;
+          const row = document.createElement('div');
+          row.className = 'sector-row';
+          row.innerHTML = '<span class="sector-label">' + s.sector + '</span>' +
+                            '<div class="sector-track"><div class="sector-fill" style="width:' + pct + '%"></div></div>' +
+                            '<span class="sector-val">' + fmtCompact(s.fy2025_budget||0) + '</span>';
+          wrap.appendChild(row);
+        });
+      }catch(e){
+        document.getElementById('sector-bars').innerHTML = '<div style="color:var(--muted);font-size:0.85rem">Reconnecting...</div>';
+      }
+    }
+
+    refreshOverview();
+    refreshAnomalies();
+    refreshSectors();
+    setInterval(refreshOverview, 30000);
+    setInterval(refreshAnomalies, 30000);
+
+    async function searchEntity(){
+      const input = document.getElementById('searchInput');
+      const output = document.getElementById('searchOutput');
+      const q = (input.value||'').trim();
+      if(!q){ output.textContent = 'Enter a search term above.'; return; }
+      output.innerHTML = '<span style="color:var(--muted)">Searching...</span>';
+      try{
+        const res = await fetch(API + '/api/v1/search?q=' + encodeURIComponent(q) + '&limit=5');
+        if(!res.ok){
+          const err = await res.json().catch(function(){ return {detail:'No results.'}; });
+          output.innerHTML = '<span style="color:var(--danger)">' + (err.detail||'No results.') + '</span>';
+          return;
+        }
+        const results = await res.json();
+        output.innerHTML = results.map(function(r){
+          return '<div class="search-result">' +
+            '<div class="search-row"><span class="search-key">Entity</span><span class="search-val">' + r.entity_name + '</span></div>' +
+            '<div class="search-row"><span class="search-key">Sector</span><span class="search-val">' + r.sector + '</span></div>' +
+            '<div class="search-row"><span class="search-key">FY2025 budget</span><span class="search-val">' + fmtUSD(r.fy2025_budget||0) + '</span></div>' +
+            '<div class="search-row"><span class="search-key">Growth vs FY2023</span><span class="search-val">' + (r.fy2025_vs_fy2023_pct?r.fy2025_vs_fy2023_pct.toFixed(1)+'%':'N/A') + '</span></div>' +
+          '</div>';
+        }).join('');
+      }catch(e){
+        output.innerHTML = '<span style="color:var(--danger)">Error connecting to API.</span>';
+      }
+    }
+
+    function useExample(){
+      document.getElementById('searchInput').value = 'health';
+      searchEntity();
+    }
+  </script>
+</body>
+</html>
+

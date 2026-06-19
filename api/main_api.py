@@ -87,6 +87,7 @@ ALLOWED_ORIGINS = [
     "https://ericdiamason.tech",
     "https://www.ericdiamason.tech",
     "https://fiscaltrace.ericdiamason.tech",
+    "https://omnisight.ericdiamason.tech",
 ]
 
 app.add_middleware(
