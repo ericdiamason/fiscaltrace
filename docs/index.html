@@ -95,6 +95,8 @@
     .anomaly-severity.high{background:rgba(251,191,36,0.12);color:#fbbf24}
     .anomaly-severity.medium{background:rgba(255,255,255,0.06);color:var(--muted)}
     .anomaly-amounts{font-family:var(--mono);font-size:0.78rem;color:var(--muted);flex-shrink:0;text-align:right}
+    .anomaly-source{font-size:0.7rem;color:var(--muted);flex-shrink:0;text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.2)}
+    .anomaly-source:hover{color:var(--accent);border-bottom-color:var(--accent)}
 
     section.block{margin-top:4rem}
     .section-label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.13em;margin-bottom:0.5rem;font-family:var(--mono)}
@@ -459,12 +461,16 @@
           const absLabel = fmtCompact(Math.abs(a.absolute_change_usd || 0));
           const row = document.createElement('div');
           row.className = 'anomaly-row';
+          const sourceLink = a.source_page
+            ? '<a class="anomaly-source" href="' + a.source_url + '" target="_blank" rel="noreferrer" title="View source document">p.' + a.source_page + ' &#8599;</a>'
+            : '';
           row.innerHTML = '<span class="anomaly-severity ' + a.alert_severity + '">' + a.alert_severity + '</span>' +
                             '<span class="anomaly-badge ' + (isUp?'up':'down') + '">' + (isUp?'+':'') + a.change_pct.toFixed(0) + '%</span>' +
                             '<span class="anomaly-name">' + a.entity_name + '</span>' +
                             '<span class="anomaly-sector">' + a.sector + '</span>' +
                             '<span class="anomaly-abs ' + (isUp?'up':'down') + '">' + (isUp?'+':'-') + absLabel + '</span>' +
-                            '<span class="anomaly-amounts">' + fmtCompact(a.fy2023_actual) + ' &rarr; ' + fmtCompact(a.fy2025_budget) + '</span>';
+                            '<span class="anomaly-amounts">' + fmtCompact(a.fy2023_actual) + ' &rarr; ' + fmtCompact(a.fy2025_budget) + '</span>' +
+                            sourceLink;
           body.appendChild(row);
         });
       }catch(e){
