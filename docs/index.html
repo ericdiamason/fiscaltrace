@@ -137,6 +137,9 @@
 
     .explorer{background:linear-gradient(180deg,rgba(255,255,255,0.012),rgba(255,255,255,0.004));border:1px solid rgba(255,255,255,0.04);border-radius:var(--radius-lg);padding:1.5rem}
     input[type="text"],input[type="number"]{width:100%;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);padding:0.65rem 0.85rem;border-radius:8px;color:var(--text);outline:none;font-family:var(--mono);font-size:0.85rem}
+    .threshold-input{border-style:dashed !important;border-color:rgba(45,212,191,0.35) !important;background:rgba(45,212,191,0.03) !important}
+    .threshold-input:focus{border-color:var(--accent) !important;background:rgba(45,212,191,0.06) !important}
+    .threshold-field label::after{content:" ✎";font-size:0.7rem;opacity:0.6}
     .threshold-panel{padding:0.9rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05)}
     .threshold-row{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.6rem}
     .threshold-field label{display:block;font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem}
@@ -218,11 +221,11 @@
           <div class="threshold-row">
             <div class="threshold-field">
               <label for="th-critical-pct">Critical: % change at or above</label>
-              <input type="number" id="th-critical-pct" value="50" step="1" min="0" />
+              <input type="number" id="th-critical-pct" class="threshold-input" value="50" step="1" min="0" />
             </div>
             <div class="threshold-field">
               <label for="th-critical-usd">Critical: $ change at or above</label>
-              <input type="number" id="th-critical-usd" value="10000000" step="100000" min="0" />
+              <input type="number" id="th-critical-usd" class="threshold-input" value="10000000" step="100000" min="0" />
             </div>
           </div>
 
@@ -232,28 +235,35 @@
             <div class="threshold-row">
               <div class="threshold-field">
                 <label for="th-high-pct">High: % change at or above</label>
-                <input type="number" id="th-high-pct" value="30" step="1" min="0" />
+                <input type="number" id="th-high-pct" class="threshold-input" value="30" step="1" min="0" />
               </div>
               <div class="threshold-field">
                 <label for="th-high-usd">High: $ change at or above</label>
-                <input type="number" id="th-high-usd" value="1000000" step="50000" min="0" />
+                <input type="number" id="th-high-usd" class="threshold-input" value="1000000" step="50000" min="0" />
               </div>
             </div>
             <div class="threshold-row">
               <div class="threshold-field">
                 <label for="th-min-pct">Minimum % change to include at all</label>
-                <input type="number" id="th-min-pct" value="20" step="1" min="0" />
+                <input type="number" id="th-min-pct" class="threshold-input" value="20" step="1" min="0" />
               </div>
               <div class="threshold-field">
                 <label for="th-min-usd">Minimum $ change to include at all</label>
-                <input type="number" id="th-min-usd" value="0" step="50000" min="0" />
+                <input type="number" id="th-min-usd" class="threshold-input" value="0" step="50000" min="0" />
               </div>
             </div>
           </div>
 
           <button class="btn btn-primary" onclick="applyThresholds()" style="margin-top:0.4rem">Apply thresholds</button>
 
-          <div class="threshold-note">An entity is flagged "critical" if EITHER its % change OR its $ change clears the bar above &mdash; not both required. Defaults reflect that a $10M shift is significant at Liberia's budget scale regardless of percentage. These are adjustable judgment calls, not fixed facts &mdash; set your own bar.</div>
+          <div class="threshold-note">
+            <strong style="color:var(--text)">How these controls work:</strong> an entity is flagged <strong>critical</strong> if EITHER its percent change OR its dollar change clears the matching bar below &mdash; it doesn't need to clear both.<br><br>
+            <strong>Critical: % change at or above</strong> &mdash; flag as critical if the budget moved by this percentage or more, in either direction (default 50%).<br>
+            <strong>Critical: $ change at or above</strong> &mdash; flag as critical if the budget moved by this many dollars or more, even if the percentage is small (default $10,000,000 &mdash; significant at Liberia's budget scale regardless of percentage).<br>
+            <strong>High: % change / $ change</strong> &mdash; the same either/or logic, one tier down, for entities that don't reach critical but are still worth attention (defaults 30% / $1,000,000).<br>
+            <strong>Minimum % change / $ change to include at all</strong> &mdash; entities below both of these are left off the list entirely, even as "medium" (defaults 20% / $0, so nothing is excluded by dollar amount alone).<br><br>
+            These thresholds are adjustable judgment calls, not fixed facts. Set your own bar, click <strong>Apply thresholds</strong>, and the list re-ranks immediately.
+          </div>
         </div>
 
         <div class="anomaly-list" id="anomaly-body">
@@ -321,7 +331,7 @@
           <ul class="list">
             <li id="fact-entities">117 spending entities tracked across 11 government sectors</li>
             <li id="fact-budget">$818M in FY2025 allocations structured and queryable</li>
-            <li id="fact-anomalies">49 entities flagged for budget changes over 20%</li>
+            <li id="fact-anomalies">49 entities flagged under default thresholds &mdash; adjust the criteria below to set your own bar</li>
             <li>Every figure traceable to its source document and page</li>
           </ul>
         </div>
@@ -398,7 +408,7 @@
 
         document.getElementById('fact-entities').textContent = d.total_entities + ' spending entities tracked across ' + d.total_sectors + ' government sectors';
         document.getElementById('fact-budget').textContent = fmtCompact(d.total_fy2025_budget) + ' in FY' + d.fiscal_year + ' allocations structured and queryable';
-        document.getElementById('fact-anomalies').textContent = (d.entities_with_large_increases + d.entities_with_large_cuts) + ' entities flagged for budget changes over 20%';
+        document.getElementById('fact-anomalies').textContent = (d.entities_with_large_increases + d.entities_with_large_cuts) + ' entities flagged under default thresholds — adjust the criteria below to set your own bar';
       }catch(e){
         document.getElementById('conn-status').textContent = 'reconnecting';
       }
