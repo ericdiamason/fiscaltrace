@@ -19,7 +19,10 @@ logs/
 
 # Database
 *.dump
+
+# Local backups made before edits (e.g. file.py.backup-20260620-093353)
 *.backup
+*.backup-*
 
 # OS
 .DS_Store

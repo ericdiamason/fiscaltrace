@@ -87,6 +87,13 @@
     .anomaly-name{flex:1;min-width:0;font-size:0.86rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .anomaly-sector{font-size:0.74rem;color:var(--muted);flex-shrink:0;display:none}
     @media(min-width:640px){.anomaly-sector{display:block}}
+    .anomaly-abs{font-family:var(--mono);font-size:0.74rem;font-weight:600;flex-shrink:0;min-width:64px;text-align:right}
+    .anomaly-abs.up{color:var(--accent)}
+    .anomaly-abs.down{color:var(--danger)}
+    .anomaly-severity{font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:0.12rem 0.4rem;border-radius:4px;flex-shrink:0}
+    .anomaly-severity.critical{background:rgba(251,113,133,0.15);color:var(--danger)}
+    .anomaly-severity.high{background:rgba(251,191,36,0.12);color:#fbbf24}
+    .anomaly-severity.medium{background:rgba(255,255,255,0.06);color:var(--muted)}
     .anomaly-amounts{font-family:var(--mono);font-size:0.78rem;color:var(--muted);flex-shrink:0;text-align:right}
 
     section.block{margin-top:4rem}
@@ -129,7 +136,14 @@
     .api-path{color:var(--text)}
 
     .explorer{background:linear-gradient(180deg,rgba(255,255,255,0.012),rgba(255,255,255,0.004));border:1px solid rgba(255,255,255,0.04);border-radius:var(--radius-lg);padding:1.5rem}
-    input[type="text"]{width:100%;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);padding:0.65rem 0.85rem;border-radius:8px;color:var(--text);outline:none;font-family:var(--mono);font-size:0.85rem}
+    input[type="text"],input[type="number"]{width:100%;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);padding:0.65rem 0.85rem;border-radius:8px;color:var(--text);outline:none;font-family:var(--mono);font-size:0.85rem}
+    .threshold-panel{padding:0.9rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05)}
+    .threshold-row{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.6rem}
+    .threshold-field label{display:block;font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem}
+    .threshold-advanced{display:none;margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed rgba(255,255,255,0.06)}
+    .threshold-advanced.open{display:block}
+    .threshold-toggle{background:none;border:none;color:var(--accent);font-size:0.78rem;cursor:pointer;padding:0;font-family:inherit}
+    .threshold-note{font-size:0.72rem;color:var(--muted);margin-top:0.5rem;line-height:1.5}
     .search-result{background:#061310;border-radius:10px;padding:0.9rem 1rem;margin-top:0.9rem;border:1px solid rgba(255,255,255,0.04);font-size:0.86rem}
     .search-row{display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px dashed rgba(255,255,255,0.04)}
     .search-row:last-child{border-bottom:none}
@@ -199,6 +213,49 @@
           <div class="feed-title">Automated anomaly detection</div>
           <div class="feed-meta" id="feed-updated">&mdash;</div>
         </div>
+
+        <div class="threshold-panel">
+          <div class="threshold-row">
+            <div class="threshold-field">
+              <label for="th-critical-pct">Critical: % change at or above</label>
+              <input type="number" id="th-critical-pct" value="50" step="1" min="0" />
+            </div>
+            <div class="threshold-field">
+              <label for="th-critical-usd">Critical: $ change at or above</label>
+              <input type="number" id="th-critical-usd" value="10000000" step="100000" min="0" />
+            </div>
+          </div>
+
+          <button class="threshold-toggle" id="advancedToggle" onclick="toggleAdvanced()">+ Adjust high / medium thresholds</button>
+
+          <div class="threshold-advanced" id="advancedPanel">
+            <div class="threshold-row">
+              <div class="threshold-field">
+                <label for="th-high-pct">High: % change at or above</label>
+                <input type="number" id="th-high-pct" value="30" step="1" min="0" />
+              </div>
+              <div class="threshold-field">
+                <label for="th-high-usd">High: $ change at or above</label>
+                <input type="number" id="th-high-usd" value="1000000" step="50000" min="0" />
+              </div>
+            </div>
+            <div class="threshold-row">
+              <div class="threshold-field">
+                <label for="th-min-pct">Minimum % change to include at all</label>
+                <input type="number" id="th-min-pct" value="20" step="1" min="0" />
+              </div>
+              <div class="threshold-field">
+                <label for="th-min-usd">Minimum $ change to include at all</label>
+                <input type="number" id="th-min-usd" value="0" step="50000" min="0" />
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="applyThresholds()" style="margin-top:0.4rem">Apply thresholds</button>
+
+          <div class="threshold-note">An entity is flagged "critical" if EITHER its % change OR its $ change clears the bar above &mdash; not both required. Defaults reflect that a $10M shift is significant at Liberia's budget scale regardless of percentage. These are adjustable judgment calls, not fixed facts &mdash; set your own bar.</div>
+        </div>
+
         <div class="anomaly-list" id="anomaly-body">
           <div style="color:var(--muted);padding:1rem 0">Loading anomalies&hellip;</div>
         </div>
@@ -347,19 +404,56 @@
       }
     }
 
+    function toggleAdvanced(){
+      const panel = document.getElementById('advancedPanel');
+      const toggle = document.getElementById('advancedToggle');
+      panel.classList.toggle('open');
+      toggle.textContent = panel.classList.contains('open')
+        ? '- Hide high / medium thresholds'
+        : '+ Adjust high / medium thresholds';
+    }
+
+    function applyThresholds(){
+      refreshAnomalies();
+    }
+
+    function getThresholdParams(){
+      return {
+        critical_pct: document.getElementById('th-critical-pct').value || 50,
+        critical_absolute_usd: document.getElementById('th-critical-usd').value || 10000000,
+        high_pct: document.getElementById('th-high-pct').value || 30,
+        high_absolute_usd: document.getElementById('th-high-usd').value || 1000000,
+        threshold_pct: document.getElementById('th-min-pct').value || 20,
+        min_absolute_usd: document.getElementById('th-min-usd').value || 0,
+      };
+    }
+
     async function refreshAnomalies(){
       try{
-        const res = await fetch(API + '/api/v1/anomalies?threshold_pct=20&limit=8');
+        const p = getThresholdParams();
+        const qs = new URLSearchParams({
+          threshold_pct: p.threshold_pct,
+          min_absolute_usd: p.min_absolute_usd,
+          critical_pct: p.critical_pct,
+          critical_absolute_usd: p.critical_absolute_usd,
+          high_pct: p.high_pct,
+          high_absolute_usd: p.high_absolute_usd,
+          limit: 8,
+        });
+        const res = await fetch(API + '/api/v1/anomalies?' + qs.toString());
         const data = await res.json();
         const body = document.getElementById('anomaly-body');
         body.innerHTML = '';
         data.forEach(a => {
           const isUp = a.alert_type === 'large_increase';
+          const absLabel = fmtCompact(Math.abs(a.absolute_change_usd || 0));
           const row = document.createElement('div');
           row.className = 'anomaly-row';
-          row.innerHTML = '<span class="anomaly-badge ' + (isUp?'up':'down') + '">' + (isUp?'+':'') + a.change_pct.toFixed(0) + '%</span>' +
+          row.innerHTML = '<span class="anomaly-severity ' + a.alert_severity + '">' + a.alert_severity + '</span>' +
+                            '<span class="anomaly-badge ' + (isUp?'up':'down') + '">' + (isUp?'+':'') + a.change_pct.toFixed(0) + '%</span>' +
                             '<span class="anomaly-name">' + a.entity_name + '</span>' +
                             '<span class="anomaly-sector">' + a.sector + '</span>' +
+                            '<span class="anomaly-abs ' + (isUp?'up':'down') + '">' + (isUp?'+':'-') + absLabel + '</span>' +
                             '<span class="anomaly-amounts">' + fmtCompact(a.fy2023_actual) + ' &rarr; ' + fmtCompact(a.fy2025_budget) + '</span>';
           body.appendChild(row);
         });

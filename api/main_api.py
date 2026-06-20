@@ -206,7 +206,8 @@ class AnomalyAlert(BaseModel):
     entity_name: str
     sector: str
     fy2023_actual: Optional[float]
-    fy2025_budget: Optional[float]
+    fy2025_budget: Optional[float] 
+    absolute_change_usd: Optional[float]
     change_pct: float
     alert_type: str
     alert_severity: str
@@ -478,6 +479,11 @@ async def search(
 @app.get("/api/v1/anomalies", response_model=List[AnomalyAlert], tags=["Intelligence"])
 async def anomalies(
     threshold_pct: float = Query(20.0, description="Minimum % change to flag as anomaly"),
+    min_absolute_usd: float = Query(0.0, description="Minimum absolute dollar change to include"),
+    critical_pct: float = Query(50.0, description="% change that alone qualifies as critical"),
+    critical_absolute_usd: float = Query(10_000_000.0, description="Absolute $ change that alone qualifies as critical, regardless of %"),
+    high_pct: float = Query(30.0, description="% change that alone qualifies as high"),
+    high_absolute_usd: float = Query(1_000_000.0, description="Absolute $ change that alone qualifies as high, regardless of %"),
     limit: int = Query(20, le=100),
 ):
     """
@@ -485,30 +491,73 @@ async def anomalies(
     Compares FY2025 budget against FY2023 actual expenditure.
     No authentication required.
 
+    Ranked by absolute dollar change, not percentage alone. A large
+    percentage swing on a small base (e.g. $124K to $539K) is real but
+    less significant in practice than a large percentage swing on a
+    substantial base (e.g. $3.7M to $13.4M). Both factors are returned
+    so the distinction is visible, not collapsed into one ranked number.
+
+    SEVERITY LOGIC: an entity is "critical" if EITHER its percentage
+    change clears critical_pct, OR its absolute dollar change clears
+    critical_absolute_usd — each condition alone is sufficient, neither
+    requires the other. The same either/or logic applies one tier down
+    for "high" using high_pct and high_absolute_usd.
+
+    This means a large dollar change with a modest percentage (e.g. a
+    $62M increase on a $140M base, 44.6%) and a large percentage change
+    with a modest dollar amount (e.g. 262% on a $3.7M base) can both
+    register as critical, for different and equally valid reasons.
+
+    All four severity thresholds are adjustable, stated heuristics, not
+    statistically derived cutoffs. The default critical_absolute_usd of
+    $10M reflects that, at Liberia's national budget scale, a $10M shift
+    is significant on its own terms, independent of what percentage of
+    the entity's prior budget it represents — a judgment call, made
+    explicit here so it can be inspected and overridden. FiscalTrace
+    does not decide what counts as critical; reviewing organizations
+    such as CENTAL are expected to apply their own judgment via these
+    parameters rather than accept the defaults uncritically.
+
     Large increases may indicate new priorities or inflated estimates.
     Large cuts may indicate programme elimination or underfunding.
     """
     async with app.state.db_pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT entity_code, entity_name, sector,
-                   fy2023_actual, fy2025_budget, fy2025_vs_fy2023_pct
+                   fy2023_actual, fy2025_budget, fy2025_vs_fy2023_pct,
+                   (fy2025_budget - fy2023_actual) AS absolute_change_usd
             FROM fiscaltrace.spending_entities
             WHERE ABS(fy2025_vs_fy2023_pct) >= $1
-            ORDER BY ABS(fy2025_vs_fy2023_pct) DESC
-            LIMIT $2
-        """, threshold_pct, limit)
+              AND ABS(fy2025_budget - fy2023_actual) >= $2
+            ORDER BY ABS(fy2025_budget - fy2023_actual) DESC
+            LIMIT $3
+        """, threshold_pct, min_absolute_usd, limit)
 
     results = []
     for r in rows:
         pct = float(r["fy2025_vs_fy2023_pct"])
+        absolute_usd = float(r["absolute_change_usd"]) if r["absolute_change_usd"] else 0.0
         alert_type = "large_increase" if pct > 0 else "large_cut"
-        severity = "critical" if abs(pct) >= 50 else "high" if abs(pct) >= 30 else "medium"
+
+        # Either condition alone qualifies — not both required.
+        # See docstring above for the reasoning behind this design.
+        is_critical = abs(pct) >= critical_pct or abs(absolute_usd) >= critical_absolute_usd
+        is_high = abs(pct) >= high_pct or abs(absolute_usd) >= high_absolute_usd
+
+        if is_critical:
+            severity = "critical"
+        elif is_high:
+            severity = "high"
+        else:
+            severity = "medium"
+
         results.append(AnomalyAlert(
             entity_code=r["entity_code"],
             entity_name=r["entity_name"],
             sector=r["sector"],
             fy2023_actual=float(r["fy2023_actual"]) if r["fy2023_actual"] else None,
             fy2025_budget=float(r["fy2025_budget"]) if r["fy2025_budget"] else None,
+            absolute_change_usd=round(absolute_usd, 2),
             change_pct=round(pct, 1),
             alert_type=alert_type,
             alert_severity=severity,
