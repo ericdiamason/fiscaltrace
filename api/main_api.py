@@ -211,6 +211,8 @@ class AnomalyAlert(BaseModel):
     change_pct: float
     alert_type: str
     alert_severity: str
+    source_url: Optional[str]
+    source_page: Optional[int]
 
 
 class OverviewResponse(BaseModel):
@@ -525,7 +527,8 @@ async def anomalies(
         rows = await conn.fetch("""
             SELECT entity_code, entity_name, sector,
                    fy2023_actual, fy2025_budget, fy2025_vs_fy2023_pct,
-                   (fy2025_budget - fy2023_actual) AS absolute_change_usd
+                   (fy2025_budget - fy2023_actual) AS absolute_change_usd,
+                   source_url, source_page
             FROM fiscaltrace.spending_entities
             WHERE ABS(fy2025_vs_fy2023_pct) >= $1
               AND ABS(fy2025_budget - fy2023_actual) >= $2
@@ -561,6 +564,8 @@ async def anomalies(
             change_pct=round(pct, 1),
             alert_type=alert_type,
             alert_severity=severity,
+            source_url=r["source_url"],
+            source_page=r["source_page"],
         ))
     return results
 
