@@ -10,6 +10,7 @@ venv/
 
 # Data files — never commit PDFs or model artifacts
 *.pdf
+!documents/budget-fy2025.pdf
 *.pkl
 *.joblib
 
